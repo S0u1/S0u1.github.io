@@ -1,0 +1,110 @@
+---
+layout:     post
+title:      "PHP一些函数的问题"
+subtitle:   ""
+date:       2017-07-31 15:00:00
+author:     "S0u1"
+header-img: "img/post-bg-2015.jpg"
+tags:
+    - 学习
+---
+#php里一些函数的问题  
+
+##大量实例来自[http://ctf.nuptzj.cn/challenges#](http://ctf.nuptzj.cn/challenges#)
+##php md5比较问题
+```php
+<?php  
+$md51 = md5('QNKCDZO');  
+$a = @$_GET['a'];  
+$md52 = @md5($a);  
+if(isset($a)){  
+if ($a != 'QNKCDZO' && $md51 == $md52) {  
+    echo "nctf{*****************}";  
+} else {  
+    echo "false!!!";  
+}}  
+else{echo "please input a";}  
+?>
+```
+>
+
+由于php是一门弱类型语言，php中的==号在进行比较时，仅比较两边的值。
+形如 '0b123' == 0 在比较时，php会把字符串'0b123'转换成整型0，因此该比较的结果是yes。  
+而使用===的时候，要求两边类型和值都相等，这样上面的结果就是no。  
+而上述代码的$md51 == $md52就是第一种比较，因此只要找到任意md5结果值是0开头的值即可。  
+
+##php 文件包含相关
+payload:
+>file=php://filter/read=convert.base64-encode/resource=index.php 
+
+php://filter是一种元封装器，设计用于数据流打开的筛选过滤应用。  
+convert.base64-encode/resource=index.php 将文件转换为base64格式再输出，确保不论什么格式的文件都可以在前台输出出来。
+
+##php ereg()函数
+
+>if (@ereg ("^[1-9]+$", $_GET['nctf']) === FALSE)  
+
+ereg函数有两个漏洞：  
+1.当它遇到%00的时候会被截断  
+2.如果nctf是一个数组，返回值就不是false
+
+##php md5()函数
+```php
+<?php if (isset($_GET['a']) and isset($_GET['b'])) {
+if ($_GET['a'] != $_GET['b'])
+if (md5($_GET['a']) === md5($_GET['b']))
+die('Flag: '.$flag);
+else
+print 'Wrong.';
+}?>
+```
+md5()函数不能处理数组结构的数据，所以这里构造a[]=1&b[]=2。 
+
+##php extrace()函数  
+extract() 函数从数组中将变量导入到当前的符号表。
+```php
+<?php if ($_SERVER["REQUEST_METHOD"] == "POST") { ?>
+      <?php
+        extract($_POST);
+        if ($pass == $thepassword_123) { ?>
+            <div class="alert alert-success">
+                <code><?php echo $theflag; ?></code>
+            </div>
+        <?php } ?>
+    <?php } ?>
+```
+提交pass=1&thepassword_123=1即可。
+
+##php intval()函数
+intval()在进行转换的时候，从字符串的开始进行转换直到遇到一个非数字的字符。而出现无法转换的字符串的时候，它不会报错，而是返回0。  
+
+##php switch()函数
+switch()在处理数字类型的case的时候，会将其中的参数转换为int类型。  
+
+##php strcmp()函数  
+strcmp(array,string)=null=0  
+
+##vi编辑器异常退出留下备份文件  
+.submit.php.swp  
+
+##serialize()和unserialize()函数问题
+还没怎么搞懂。。。  
+待续。。。  
+
+##file_put_contents()函数  
+
+>int file_put_contents ( string $filename , mixed $data [, int $flags = 0 [, resource $context ]] )
+
+参数data可以使数组，如果是数字就会被连接成字符串再进行写入。
+可以用来绕过waf等。
+
+
+
+
+
+
+
+
+
+
+
