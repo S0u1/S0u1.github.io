@@ -1,0 +1,71 @@
+---
+layout:     post
+title:      "php弱类型问题"
+subtitle:   ""
+date:       2017-08-28 17:30:00
+author:     "S0u1"
+header-img: "img/post-bg-2015.jpg"
+tags:
+    - 学习
+---
+# bool欺骗
+存在json_decode和unserialize时，部分结构会被解释成bool类型。
+json_decode:
+```php
+<?php
+$json_str = '{"user":true,"pass":true}';
+$data = json_decode($json_str,true);
+if ($data['user'] == 'admin' && $data['pass']=='secirity')
+{
+    print_r('logined in as bool'."\n");
+}
+?>
+```
+unserialize:
+```php
+<?php
+$unserialize_str = 'a:2:{s:4:"user";b:1;s:4:"pass";b:1;}';
+$data_unserialize = unserialize($unserialize_str);
+if ($data_unserialize['user'] == 'admin' && $data_unserialize['pass']=='secirity')
+{
+    print_r('logined in unserialize'."\n");
+}
+?>
+```
+# 数字转换欺骗
+(int)和intval()可以绕过数字比较
+```php
+<?php
+$id = 1.1;
+$id = intval($id);
+if ($ip != 1){
+    print $id;
+}
+?>
+```
+下面这种情况可以传入123 union select 
+```php
+<?php
+if(intval($id) == '123')
+{
+    $db->query("select * from user where id = $id")
+}
+?>
+```
+# PHP 5.4.4数字型字符溢出
+```php
+<?php
+var_dump("61529519452809720693702583126814" == "61529519452809720000000000000000");
+?>
+```
+# strcmp函数
+int strcmp(string $str1,string $str2)
+如果str1<str2,返回0;如果str1>str2,返回1;如果两者相等，返回0;
+如果$str2是一个array，则会返回0。
+# in_array()函数
+in_array("abc",$arr1)  
+in_array("1bc",$arr2)  
+如果arr1里有个0，则第一行为真，因为intval("abc")=0  
+如果arr2里有个1，则第二行为真，因为intval("1bc")=1  
+# array
+Array转换整型int/浮点型float会返回元素个数，转换bool返回Array中是否有元素；转换成string返回'Array'，并抛出warning。  

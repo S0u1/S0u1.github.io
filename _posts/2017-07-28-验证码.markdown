@@ -17,9 +17,10 @@ def vcode(vcodepath):
     return (pytesseract.image_to_string(img))  
 ```
 
-但是在实际使用中总是会出ERROR2的问题（似乎是这个），上网查了一下，是找不到指定路径。但我的路径写的完全没有问题。。。摸不着头脑。
+但是在实际使用中总是会出ERROR2的问题（似乎是这个），上网查了一下，是找不到指定路径。  
+但我的路径写的完全没有问题。。。摸不着头脑。  
 最后在网上找了一下解决方案,在代码里加入一句这个：  
-`
+```Python
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
-`  
+``` 
 后面的是安装的tesseract的路径。
